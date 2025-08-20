@@ -7,6 +7,58 @@ import { getGitDiff } from '../src/git.js';
 import { config, isConfigValid, showConfigHelp, saveApiKey, saveProvider } from '../src/config.js';
 import inquirer from 'inquirer';
 
+// 显示当前配置（不包含敏感信息）
+function showCurrentConfig() {
+  console.log(chalk.blue('⚙️  当前配置信息'));
+  console.log(chalk.white('─'.repeat(50)));
+  
+  console.log(chalk.cyan(`AI服务提供商: ${config.provider || '未设置'}`));
+  console.log(chalk.cyan(`OpenAI模型: ${config.openaiModel || '未设置'}`));
+  console.log(chalk.cyan(`DeepSeek模型: ${config.deepseekModel || '未设置'}`));
+  console.log(chalk.cyan(`生成温度: ${config.temperature || '未设置'}`));
+  console.log(chalk.cyan(`输出语言: ${config.language || '未设置'}`));
+  console.log(chalk.cyan(`Commit风格: ${config.style || '未设置'}`));
+  console.log(chalk.cyan(`最大Token数: ${config.maxTokens || '未设置'}`));
+  
+  console.log(chalk.white('─'.repeat(50)));
+  console.log(chalk.blue('💡 使用 --show-keys 查看API密钥状态'));
+  console.log(chalk.blue('💡 使用 --config-help 查看配置帮助'));
+}
+
+// 显示API密钥状态（脱敏）
+function showApiKeys() {
+  console.log(chalk.blue('🔑 API密钥状态'));
+  console.log(chalk.white('─'.repeat(50)));
+  
+  const openaiStatus = config.openaiApiKey ? '已配置' : '未配置';
+  const deepseekStatus = config.deepseekApiKey ? '已配置' : '未配置';
+  
+  console.log(chalk.cyan(`OpenAI API密钥: ${openaiStatus}`));
+  if (config.openaiApiKey) {
+    const maskedKey = maskApiKey(config.openaiApiKey);
+    console.log(chalk.gray(`   密钥: ${maskedKey}`));
+  }
+  
+  console.log(chalk.cyan(`DeepSeek API密钥: ${deepseekStatus}`));
+  if (config.deepseekApiKey) {
+    const maskedKey = maskApiKey(config.deepseekApiKey);
+    console.log(chalk.gray(`   密钥: ${maskedKey}`));
+  }
+  
+  console.log(chalk.white('─'.repeat(50)));
+  console.log(chalk.blue('💡 使用 --show-config 查看完整配置'));
+  console.log(chalk.blue('💡 使用 --config-help 查看配置帮助'));
+}
+
+// 脱敏API密钥
+function maskApiKey(apiKey) {
+  if (!apiKey || apiKey.length < 8) return apiKey;
+  const prefix = apiKey.substring(0, 4);
+  const suffix = apiKey.substring(apiKey.length - 4);
+  const middle = '*'.repeat(Math.min(apiKey.length - 8, 8));
+  return `${prefix}${middle}${suffix}`;
+}
+
 // 自动合并master分支
 async function autoMergeMaster() {
   try {
@@ -53,6 +105,8 @@ program
   .option('--no-auto-add', 'Disable automatic git add .')
   .option('--no-auto-merge', 'Disable automatic master branch merge')
   .option('--config-help', 'Show configuration help')
+  .option('--show-config', 'Show current configuration (without sensitive data)')
+  .option('--show-keys', 'Show API keys (masked for security)')
   .parse();
 
 const options = program.opts();
@@ -62,6 +116,18 @@ async function main() {
     // 显示配置帮助
     if (options.configHelp) {
       showConfigHelp();
+      return;
+    }
+
+    // 显示当前配置
+    if (options.showConfig) {
+      showCurrentConfig();
+      return;
+    }
+
+    // 显示API密钥（脱敏）
+    if (options.showKeys) {
+      showApiKeys();
       return;
     }
 
