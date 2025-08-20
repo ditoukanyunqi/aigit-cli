@@ -1,11 +1,19 @@
 {
   "name": "aigit-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered git commit message generator using OpenAI or DeepSeek",
   "main": "src/index.js",
   "bin": {
     "aigit": "bin/aigit.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE",
+    "USAGE.md"
+  ],
+  "readme": "README.md",
   "scripts": {
     "start": "node bin/aigit.js",
     "test": "echo \"✅ Tests passed\"",

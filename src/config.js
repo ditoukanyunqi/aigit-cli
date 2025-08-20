@@ -19,7 +19,9 @@ const DEFAULT_CONFIG = {
   temperature: 0.7,
   language: '中文',
   style: 'conventional',
-  maxTokens: 150
+  maxTokens: 150,
+  useSimplifiedDiff: true, // 是否使用简化的diff（减少token消耗）
+  maxDiffLength: 2000 // 最大diff长度
 };
 
 // DeepSeek支持的模型列表

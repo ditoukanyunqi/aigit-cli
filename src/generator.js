@@ -43,48 +43,68 @@ function getAIClient(provider, apiKey) {
 function generatePrompt(diff, options) {
   const { language, style } = options;
   
+  // 简化prompt模板，减少token消耗
   const stylePrompts = {
-    conventional: `请根据以下代码变更，生成一个符合Conventional Commits规范的commit message。
+    conventional: `用${language}生成Conventional Commits格式的commit message。
 
-要求：
-1. 使用${language}语言
-2. 遵循Conventional Commits格式：<type>(<scope>): <description>
-3. type应该是：feat, fix, docs, style, refactor, test, chore等
-4. 描述要简洁明了，不超过50个字符
-5. 如果有破坏性变更，在type后加!号
+格式：<type>(<scope>): <description>
+类型：feat, fix, docs, style, refactor, test, chore
+要求：简洁，不超过50字符
 
-代码变更内容：
-${diff}
+代码变更：
+${diff}`,
 
-请只返回commit message，不要包含其他内容。`,
+    simple: `用${language}生成简洁的commit message。
 
-    simple: `请根据以下代码变更，生成一个简洁的commit message。
+要求：简洁明了，不超过30字符
 
-要求：
-1. 使用${language}语言
-2. 简洁明了，不超过30个字符
-3. 描述代码变更的主要内容
+代码变更：
+${diff}`,
 
-代码变更内容：
-${diff}
+    detailed: `用${language}生成详细的commit message。
 
-请只返回commit message，不要包含其他内容。`,
+第一行：简短摘要（不超过50字符）
+空行后：详细描述
 
-    detailed: `请根据以下代码变更，生成一个详细的commit message。
-
-要求：
-1. 使用${language}语言
-2. 第一行是简短摘要（不超过50字符）
-3. 空一行后添加详细描述
-4. 详细描述要说明变更的原因和影响
-
-代码变更内容：
-${diff}
-
-请只返回commit message，不要包含其他内容。`
+代码变更：
+${diff}`
   };
 
   return stylePrompts[style] || stylePrompts.conventional;
+}
+
+// 智能处理diff内容，减少token消耗
+function optimizeDiff(diff) {
+  if (!diff) return '';
+  
+  // 移除不必要的上下文信息
+  let optimized = diff
+    // 移除文件路径前缀（如果太长）
+    .replace(/^diff --git a\/(.+?) b\/(.+?)$/gm, '')
+    // 移除index行
+    .replace(/^index [a-f0-9]+\.\.[0-9]+ [0-9]+$/gm, '')
+    // 移除---和+++行
+    .replace(/^--- a\/(.+)$/gm, '')
+    .replace(/^\+\+\+ b\/(.+)$/gm, '')
+    // 移除@@行（但保留行号信息）
+    .replace(/^@@ -[0-9,]+ \+[0-9,]+ @@.*$/gm, '')
+    // 移除空行
+    .replace(/^\s*$/gm, '')
+    // 限制每行长度
+    .split('\n')
+    .map(line => line.length > 100 ? line.substring(0, 100) + '...' : line)
+    .join('\n');
+
+  // 进一步限制总长度
+  const maxLength = config.maxDiffLength || 2000;
+  if (optimized.length > maxLength) {
+    // 智能截断：保留开头和结尾，中间截断
+    const start = Math.floor(maxLength * 0.6);
+    const end = Math.floor(maxLength * 0.4);
+    optimized = optimized.substring(0, start) + '\n... (内容已截断) ...\n' + optimized.substring(optimized.length - end);
+  }
+
+  return optimized;
 }
 
 // 生成commit message
@@ -100,13 +120,14 @@ export async function generateCommitMessage(diff, options = {}) {
       maxTokens: config.maxTokens
     };
 
-    // 如果diff太长，截取重要部分
-    const maxDiffLength = 4000;
-    const truncatedDiff = diff.length > maxDiffLength 
-      ? diff.substring(0, maxDiffLength) + '\n... (内容已截断)'
-      : diff;
+    // 优化diff内容，减少token消耗
+    const optimizedDiff = optimizeDiff(diff);
+    
+    if (!optimizedDiff.trim()) {
+      throw new Error('没有有效的代码变更内容');
+    }
 
-    const prompt = generatePrompt(truncatedDiff, finalOptions);
+    const prompt = generatePrompt(optimizedDiff, finalOptions);
 
     const client = getAIClient(finalOptions.provider);
     const completion = await client.chat.completions.create({
@@ -114,7 +135,7 @@ export async function generateCommitMessage(diff, options = {}) {
       messages: [
         {
           role: 'system',
-          content: '你是一个专业的软件开发工程师，擅长编写清晰、规范的git commit message。'
+          content: '你是专业的软件开发工程师，擅长编写git commit message。'
         },
         {
           role: 'user',

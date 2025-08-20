@@ -182,6 +182,45 @@ npm publish --registry=https://registry.npmjs.org/
 ./publish-npm.sh
 ```
 
+## 💰 Token优化
+
+为了减少API调用成本，工具内置了智能的token优化功能：
+
+### 自动优化策略
+
+1. **智能diff处理**
+   - 自动移除不必要的git diff信息
+   - 限制上下文行数（--unified=1）
+   - 移除文件路径前缀
+
+2. **内容截断**
+   - 当文件数量 > 10时，自动使用统计模式
+   - 限制diff最大长度为2000字符
+   - 智能保留重要信息
+
+3. **Prompt优化**
+   - 简化prompt模板
+   - 减少系统消息长度
+   - 优化指令描述
+
+### 配置选项
+
+在 `~/.aigitrc` 中可以配置：
+
+```json
+{
+  "useSimplifiedDiff": true,    // 启用简化diff模式
+  "maxDiffLength": 2000         // 最大diff长度
+}
+```
+
+### 测试优化效果
+
+```bash
+# 测试token优化
+node test-token-optimization.js
+```
+
 ### 命令行参数
 
 | 参数 | 简写 | 说明 | 默认值 |

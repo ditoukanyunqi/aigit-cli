@@ -24,7 +24,8 @@ function getStagedFiles() {
 // 获取暂存区的diff内容
 function getStagedDiff() {
   try {
-    return execSync('git diff --cached', { encoding: 'utf8' });
+    // 使用--no-prefix减少路径前缀，--unified=1减少上下文行数
+    return execSync('git diff --cached --no-prefix --unified=1', { encoding: 'utf8' });
   } catch {
     return '';
   }
@@ -33,7 +34,52 @@ function getStagedDiff() {
 // 获取未暂存但已修改的文件diff
 function getUnstagedDiff() {
   try {
-    return execSync('git diff', { encoding: 'utf8' });
+    // 使用--no-prefix减少路径前缀，--unified=1减少上下文行数
+    return execSync('git diff --no-prefix --unified=1', { encoding: 'utf8' });
+  } catch {
+    return '';
+  }
+}
+
+// 获取简化的diff内容（只包含变更的核心信息）
+function getSimplifiedDiff() {
+  try {
+    // 获取文件列表
+    const stagedFiles = getStagedFiles();
+    const unstagedFiles = execSync('git diff --name-only', { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+    
+    let simplifiedDiff = '';
+    
+    // 处理暂存的文件
+    if (stagedFiles.length > 0) {
+      simplifiedDiff += '暂存文件:\n';
+      stagedFiles.forEach(file => {
+        // 只获取文件的基本变更统计
+        try {
+          const stats = execSync(`git diff --cached --stat ${file}`, { encoding: 'utf8' });
+          simplifiedDiff += stats + '\n';
+        } catch (e) {
+          simplifiedDiff += `${file}\n`;
+        }
+      });
+      simplifiedDiff += '\n';
+    }
+    
+    // 处理未暂存的文件
+    if (unstagedFiles.length > 0) {
+      simplifiedDiff += '未暂存文件:\n';
+      unstagedFiles.forEach(file => {
+        // 只获取文件的基本变更统计
+        try {
+          const stats = execSync(`git diff --stat ${file}`, { encoding: 'utf8' });
+          simplifiedDiff += stats + '\n';
+        } catch (e) {
+          simplifiedDiff += `${file}\n`;
+        }
+      });
+    }
+    
+    return simplifiedDiff;
   } catch {
     return '';
   }
@@ -46,7 +92,12 @@ export async function getGitDiff() {
   }
 
   const stagedFiles = getStagedFiles();
-  const unstagedDiff = getUnstagedDiff();
+  const unstagedFiles = execSync('git diff --name-only', { encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+  
+  // 如果文件数量很多，使用简化的diff
+  if (stagedFiles.length + unstagedFiles.length > 10) {
+    return getSimplifiedDiff();
+  }
   
   // 如果有暂存的文件，优先使用暂存区的diff
   if (stagedFiles.length > 0) {
@@ -57,8 +108,11 @@ export async function getGitDiff() {
   }
   
   // 如果没有暂存的文件，检查是否有未暂存的修改
-  if (unstagedDiff.trim()) {
-    return unstagedDiff;
+  if (unstagedFiles.length > 0) {
+    const unstagedDiff = getUnstagedDiff();
+    if (unstagedDiff.trim()) {
+      return unstagedDiff;
+    }
   }
   
   return null;

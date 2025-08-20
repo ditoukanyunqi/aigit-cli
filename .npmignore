@@ -65,3 +65,8 @@ node_modules/
 # Config files that might contain sensitive data
 .aigitrc
 example-config.json
+
+# Keep important documentation files
+!README.md
+!LICENSE
+!USAGE.md
