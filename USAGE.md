@@ -41,11 +41,14 @@ node bin/aigit.js
 # 基本使用
 node bin/aigit.js
 
-# 预览模式（不提交）
-node bin/aigit.js -d
+# 预览模式（不提交，不add）
+aigit -d
 
-# 自动提交
-node bin/aigit.js -c
+# 禁用自动添加文件
+aigit --no-auto-add
+
+# 禁用自动合并master
+aigit --no-auto-merge
 
 # 指定AI服务提供商
 node bin/aigit.js -p openai
@@ -92,6 +95,7 @@ export DEEPSEEK_API_KEY="your-api-key"
 ## 💡 提示
 
 - 确保在git仓库目录中运行
-- 先使用 `git add` 添加文件到暂存区
-- 使用 `--dry-run` 预览生成的message
-- 使用 `--commit` 自动提交（谨慎使用）
+- 默认自动执行 `git add .` 和提交
+- 使用 `-d` 预览生成的message（不提交，不add）
+- 自动尝试合并master分支
+- 支持禁用自动功能（--no-auto-add, --no-auto-merge）

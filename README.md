@@ -96,7 +96,7 @@ node bin/aigit.js --config-help
 ### 3. 使用CLI工具
 
 ```bash
-# 基本使用（全局安装后）
+# 基本使用（全局安装后）- 自动add、提交、合并master
 aigit
 
 # 指定AI服务提供商
@@ -111,11 +111,14 @@ aigit -l 中文
 # 指定风格
 aigit -s conventional
 
-# 预览模式（不提交）
+# 预览模式（不提交，不add）
 aigit -d
 
-# 自动提交
-aigit -c
+# 禁用自动添加文件
+aigit --no-auto-add
+
+# 禁用自动合并master
+aigit --no-auto-merge
 
 # 查看帮助
 aigit --help
@@ -155,8 +158,9 @@ aigit --config-help
 | `--temperature` | `-t` | AI生成温度 | `0.7` |
 | `--language` | `-l` | 输出语言 | `中文` |
 | `--style` | `-s` | Commit风格 | `conventional` |
-| `--dry-run` | `-d` | 预览模式 | `false` |
-| `--commit` | `-c` | 自动提交 | `false` |
+| `--dry-run` | `-d` | 预览模式（不提交，不add） | `false` |
+| `--no-auto-add` | | 禁用自动git add . | `false` |
+| `--no-auto-merge` | | 禁用自动合并master分支 | `false` |
 | `--config-help` | | 显示配置帮助 | `false` |
 
 ### Commit Message风格

@@ -46,19 +46,22 @@ export async function getGitDiff() {
   }
 
   const stagedFiles = getStagedFiles();
+  const unstagedDiff = getUnstagedDiff();
   
-  if (stagedFiles.length === 0) {
-    // 如果没有暂存的文件，检查是否有未暂存的修改
-    const unstagedDiff = getUnstagedDiff();
-    if (unstagedDiff.trim()) {
-      console.log('⚠️  检测到未暂存的文件修改，建议先使用 git add 添加到暂存区');
-      return unstagedDiff;
+  // 如果有暂存的文件，优先使用暂存区的diff
+  if (stagedFiles.length > 0) {
+    const stagedDiff = getStagedDiff();
+    if (stagedDiff.trim()) {
+      return stagedDiff;
     }
-    return null;
   }
-
-  const stagedDiff = getStagedDiff();
-  return stagedDiff;
+  
+  // 如果没有暂存的文件，检查是否有未暂存的修改
+  if (unstagedDiff.trim()) {
+    return unstagedDiff;
+  }
+  
+  return null;
 }
 
 // 执行git commit

@@ -7,6 +7,39 @@ import { getGitDiff } from '../src/git.js';
 import { config, isConfigValid, showConfigHelp, saveApiKey, saveProvider } from '../src/config.js';
 import inquirer from 'inquirer';
 
+// 自动合并master分支
+async function autoMergeMaster() {
+  try {
+    const { execSync } = await import('child_process');
+    
+    // 获取当前分支名
+    const currentBranch = execSync('git branch --show-current', { encoding: 'utf8' }).trim();
+    
+    // 如果不是master分支，尝试合并
+    if (currentBranch !== 'master' && currentBranch !== 'main') {
+      console.log(chalk.gray(`🔄 正在尝试合并master分支到当前分支 ${currentBranch}...`));
+      
+      try {
+        // 获取远程master分支的最新内容
+        execSync('git fetch origin master', { stdio: 'inherit' });
+        
+        // 尝试合并
+        execSync('git merge origin/master', { stdio: 'inherit' });
+        console.log(chalk.green('✅ 成功合并master分支'));
+        
+      } catch (mergeError) {
+        console.log(chalk.yellow('⚠️  合并master分支失败，可能需要手动解决冲突'));
+        console.log(chalk.blue('💡 提示: 手动执行 git merge origin/master 解决冲突'));
+      }
+    } else {
+      console.log(chalk.blue('ℹ️  当前在master分支，无需合并'));
+    }
+    
+  } catch (error) {
+    console.log(chalk.yellow('⚠️  自动合并功能出现问题，跳过合并'));
+  }
+}
+
 program
   .name('aigit')
   .description('AI-powered git commit message generator using OpenAI or DeepSeek')
@@ -17,7 +50,8 @@ program
   .option('-l, --language <language>', 'Language for commit message', '中文')
   .option('-s, --style <style>', 'Commit message style (conventional, simple, detailed)', 'conventional')
   .option('-d, --dry-run', 'Show generated message without committing')
-  .option('-c, --commit', 'Automatically commit with generated message')
+  .option('--no-auto-add', 'Disable automatic git add .')
+  .option('--no-auto-merge', 'Disable automatic master branch merge')
   .option('--config-help', 'Show configuration help')
   .parse();
 
@@ -94,13 +128,26 @@ async function main() {
     }
 
     console.log(chalk.blue('🚀 AI Git Commit Message Generator'));
+    
+    // 自动执行 git add .
+    if (!options.noAutoAdd) {
+      console.log(chalk.gray('📁 正在添加所有文件到暂存区...'));
+      try {
+        const { execSync } = await import('child_process');
+        execSync('git add .', { stdio: 'inherit' });
+        console.log(chalk.green('✅ 文件已添加到暂存区'));
+      } catch (addError) {
+        console.log(chalk.yellow('⚠️  自动添加文件失败，继续使用当前暂存区'));
+      }
+    }
+
     console.log(chalk.gray('正在分析代码变更...\n'));
 
     // 获取git diff
     const diff = await getGitDiff();
     
     if (!diff) {
-      console.log(chalk.yellow('⚠️  没有检测到代码变更，请先添加文件到暂存区'));
+      console.log(chalk.yellow('⚠️  没有检测到代码变更'));
       process.exit(1);
     }
 
@@ -117,57 +164,59 @@ async function main() {
 
     if (options.dryRun) {
       console.log(chalk.yellow('\n🔍 这是预览模式，不会执行commit'));
+      console.log(chalk.blue('\n💡 提示: 手动复制上面的commit message进行提交'));
       return;
     }
 
-    if (options.commit) {
-      console.log(chalk.green('\n✅ 正在自动提交...'));
-      
-      try {
-        // 询问用户是否确认提交
-        const confirmAnswer = await inquirer.prompt([
-          {
-            type: 'confirm',
-            name: 'confirm',
-            message: `确认使用以下commit message提交？\n"${commitMessage}"`,
-            default: true
-          }
-        ]);
-
-        if (confirmAnswer.confirm) {
-          // 执行git commit
-          const { execSync } = await import('child_process');
-          
-          // 清理commit message，移除换行符和特殊字符
-          const cleanMessage = commitMessage.replace(/\n/g, ' ').trim();
-          
-          execSync(`git commit -m "${cleanMessage}"`, { stdio: 'inherit' });
-          
-          console.log(chalk.green('🎉 提交成功！'));
-          
-          // 显示git状态
-          try {
-            const status = execSync('git status --porcelain', { encoding: 'utf8' });
-            if (status.trim()) {
-              console.log(chalk.blue('\n📊 当前git状态:'));
-              console.log(chalk.gray(status));
-            } else {
-              console.log(chalk.green('\n✨ 工作区干净，所有更改已提交'));
-            }
-          } catch (statusError) {
-            console.log(chalk.yellow('\n⚠️  无法获取git状态'));
-          }
-        } else {
-          console.log(chalk.yellow('❌ 用户取消提交'));
+    // 默认自动提交
+    console.log(chalk.green('\n✅ 正在自动提交...'));
+    
+    try {
+      // 询问用户是否确认提交
+      const confirmAnswer = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'confirm',
+          message: `确认使用以下commit message提交？\n"${commitMessage}"`,
+          default: true
         }
-      } catch (commitError) {
-        console.error(chalk.red('❌ 自动提交失败:'), commitError.message);
-        console.log(chalk.blue('\n💡 你可以手动执行:'));
-        console.log(chalk.cyan(`git commit -m "${commitMessage}"`));
+      ]);
+
+      if (confirmAnswer.confirm) {
+        // 执行git commit
+        const { execSync } = await import('child_process');
+        
+        // 清理commit message，移除换行符和特殊字符
+        const cleanMessage = commitMessage.replace(/\n/g, ' ').trim();
+        
+        execSync(`git commit -m "${cleanMessage}"`, { stdio: 'inherit' });
+        
+        console.log(chalk.green('🎉 提交成功！'));
+        
+        // 自动合并master分支
+        if (!options.noAutoMerge) {
+          await autoMergeMaster();
+        }
+        
+        // 显示git状态
+        try {
+          const status = execSync('git status --porcelain', { encoding: 'utf8' });
+          if (status.trim()) {
+            console.log(chalk.blue('\n📊 当前git状态:'));
+            console.log(chalk.gray(status));
+          } else {
+            console.log(chalk.green('\n✨ 工作区干净，所有更改已提交'));
+          }
+        } catch (statusError) {
+          console.log(chalk.yellow('\n⚠️  无法获取git状态'));
+        }
+      } else {
+        console.log(chalk.yellow('❌ 用户取消提交'));
       }
-    } else {
-      console.log(chalk.blue('\n💡 提示: 使用 --commit 参数可以自动提交'));
-      console.log(chalk.blue('   或者手动复制上面的commit message'));
+    } catch (commitError) {
+      console.error(chalk.red('❌ 自动提交失败:'), commitError.message);
+      console.log(chalk.blue('\n💡 你可以手动执行:'));
+      console.log(chalk.cyan(`git commit -m "${commitMessage}"`));
     }
 
   } catch (error) {
