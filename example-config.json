@@ -1,0 +1,11 @@
+{
+  "provider": "openai",
+  "openaiApiKey": "sk-your-openai-api-key-here",
+  "openaiModel": "gpt-3.5-turbo",
+  "deepseekApiKey": "sk-your-deepseek-api-key-here",
+  "deepseekModel": "deepseek-chat",
+  "temperature": 0.7,
+  "language": "中文",
+  "style": "conventional",
+  "maxTokens": 150
+}
