@@ -58,3 +58,4 @@ jspm_packages/
 
 # Config files that might contain sensitive data
 .aigitrc
+.npmrc

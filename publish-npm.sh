@@ -30,6 +30,7 @@ if ! npm whoami > /dev/null 2>&1; then
 fi
 
 echo "✅ 已登录npm: $(npm whoami)"
+echo "🌐 当前registry: $(npm config get registry)"
 echo ""
 
 # 显示当前包信息
