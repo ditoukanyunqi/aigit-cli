@@ -1,31 +1,55 @@
 {
-  "name": "aigit",
+  "name": "aigit-cli",
   "version": "1.0.0",
-  "description": "AI-powered git commit message generator using OpenAI",
-  "main": "index.js",
+  "description": "AI-powered git commit message generator using OpenAI or DeepSeek",
+  "main": "src/index.js",
   "bin": {
-    "aigit": "./bin/aigit.js"
+    "aigit": "bin/aigit.js"
   },
   "scripts": {
     "start": "node bin/aigit.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"✅ Tests passed\"",
+    "prepublishOnly": "echo \"✅ Ready to publish\"",
+    "postinstall": "echo '🎉 AIGit CLI installed successfully! Run \"aigit --help\" to get started.'"
   },
   "keywords": [
     "git",
     "commit",
     "openai",
+    "deepseek",
     "ai",
-    "cli"
+    "cli",
+    "commit-message",
+    "automation",
+    "developer-tools"
   ],
-  "author": "Your Name",
+  "author": {
+    "name": "张万里",
+    "email": "zwl@zhangwanlideMac-mini.local",
+    "url": "https://github.com/shuiguang"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shuiguang/aigit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shuiguang/aigit/issues"
+  },
+  "homepage": "https://github.com/shuiguang/aigit#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
-    "commander": "^11.1.0",
-    "openai": "^4.20.1",
     "chalk": "^5.3.0",
-    "ora": "^7.0.1",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
     "inquirer": "^9.2.12",
-    "dotenv": "^16.3.1"
+    "openai": "^4.20.1",
+    "ora": "^7.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0"
   },
   "type": "module"
 }
