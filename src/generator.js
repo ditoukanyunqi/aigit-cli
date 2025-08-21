@@ -152,7 +152,10 @@ export async function generateCommitMessage(diff, options = {}) {
       throw new Error('AI未能生成有效的commit message');
     }
 
-    return commitMessage;
+    // 将commit message转换为小写
+    const lowercaseMessage = commitMessage.toLowerCase();
+
+    return lowercaseMessage;
 
   } catch (error) {
     const providerName = config.provider === 'openai' ? 'OpenAI' : 'DeepSeek';
