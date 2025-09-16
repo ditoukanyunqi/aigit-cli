@@ -5,6 +5,8 @@ import chalk from 'chalk';
 import { generateCommitMessage } from '../src/generator.js';
 import { getGitDiff } from '../src/git.js';
 import { config, isConfigValid, showConfigHelp, saveApiKey, saveProvider } from '../src/config.js';
+import { ProjectConfigDetector } from '../src/project-config.js';
+import { codeReviewer } from '../src/code-review.js';
 import inquirer from 'inquirer';
 
 // 显示当前配置（不包含敏感信息）
@@ -107,6 +109,10 @@ program
   .option('--config-help', 'Show configuration help')
   .option('--show-config', 'Show current configuration (without sensitive data)')
   .option('--show-keys', 'Show API keys (masked for security)')
+  .option('--detect-project', 'Detect and show project configuration')
+  .option('--code-review', 'Perform AI-powered code review')
+  .option('--review-type <type>', 'Code review type (comprehensive/security/performance/maintainability)', 'comprehensive')
+  .option('--review-summary', 'Generate code review summary only')
   .parse();
 
 const options = program.opts();
@@ -128,6 +134,15 @@ async function main() {
     // 显示API密钥（脱敏）
     if (options.showKeys) {
       showApiKeys();
+      return;
+    }
+
+    // 检测项目配置
+    if (options.detectProject) {
+      console.log(chalk.blue('🔍 项目配置检测'));
+      const projectDetector = new ProjectConfigDetector();
+      const projectConfig = await projectDetector.detectConfig();
+      projectDetector.showDetectionResult();
       return;
     }
 
@@ -194,6 +209,25 @@ async function main() {
     }
 
     console.log(chalk.blue('🚀 AI Git Commit Message Generator'));
+    
+    // 检测项目配置
+    console.log(chalk.gray('🔍 正在检测项目配置...'));
+    const projectDetector = new ProjectConfigDetector();
+    const projectConfig = await projectDetector.detectConfig();
+    
+    // 显示检测结果
+    projectDetector.showDetectionResult();
+    
+    // 根据项目配置自动调整选项
+    if (!options.style && projectConfig.commitStyle !== config.style) {
+      console.log(chalk.blue(`💡 根据项目配置自动调整commit风格为: ${projectConfig.commitStyle}`));
+      options.style = projectConfig.commitStyle;
+    }
+    
+    if (!options.language && projectConfig.language !== config.language) {
+      console.log(chalk.blue(`💡 根据项目配置自动调整语言为: ${projectConfig.language}`));
+      options.language = projectConfig.language;
+    }
     
     // 自动执行 git add .
     if (!options.noAutoAdd) {
